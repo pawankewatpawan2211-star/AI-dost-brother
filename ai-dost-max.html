@@ -1,0 +1,642 @@
+<!DOCTYPE html>
+<html lang="hi">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<meta name="theme-color" content="#0b0f19">
+<title>AI Dost — अल्ट्रा मैक्स</title>
+<style>
+  :root {
+    --bg-dark: #0b0f19; --bg-surface: #121826; --bg-card: #1a2236;
+    --primary: #6366f1; --gradient: linear-gradient(135deg, #6366f1 0%, #a855f7 50%, #ec4899 100%);
+    --text: #f8fafc; --text-dim: #94a3b8; --border: rgba(255, 255, 255, 0.08);
+    --user-bubble: #4f46e5; --ai-bubble: rgba(30, 41, 59, 0.85);
+  }
+
+  body.theme-ocean {
+    --bg-dark: #061325; --bg-surface: #0a1f3d; --bg-card: #112d55;
+    --primary: #0ea5e9; --gradient: linear-gradient(135deg, #0ea5e9 0%, #2dd4bf 100%);
+    --user-bubble: #0284c7; --ai-bubble: rgba(12, 39, 76, 0.85);
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; font-family: system-ui, -apple-system, sans-serif; -webkit-tap-highlight-color: transparent; }
+  body { background: var(--bg-dark); color: var(--text); height: 100dvh; display: flex; flex-direction: column; overflow: hidden; transition: background-color 0.3s; }
+
+  header { background: var(--bg-surface); border-bottom: 1px solid var(--border); padding: 10px 14px; display: flex; align-items: center; justify-content: space-between; z-index: 10; }
+  .brand { display: flex; align-items: center; gap: 10px; cursor: pointer; }
+  .logo-wrap { width: 40px; height: 40px; border-radius: 12px; background: var(--gradient); display: flex; align-items: center; justify-content: center; box-shadow: 0 4px 12px rgba(99, 102, 241, 0.35); flex-shrink: 0; }
+  .brand-text h1 { font-size: 1.05rem; font-weight: 700; background: var(--gradient); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+  .brand-text p { font-size: 0.72rem; color: #10b981; font-weight: 600; }
+
+  .header-actions { display: flex; align-items: center; gap: 8px; }
+  .icon-btn { width: 38px; height: 38px; border-radius: 50%; border: none; background: var(--bg-card); color: var(--text-dim); display: flex; align-items: center; justify-content: center; cursor: pointer; transition: 0.2s; flex-shrink: 0; }
+  .icon-btn:hover, .icon-btn:active { color: #fff; background: rgba(255,255,255,0.15); }
+  .avatar-wrap { width: 38px; height: 38px; border-radius: 50%; overflow: hidden; border: 2px solid var(--primary); cursor: pointer; background: var(--bg-card); flex-shrink: 0; }
+  .avatar-wrap img { width: 100%; height: 100%; object-fit: cover; }
+
+  #chatBox { flex: 1; overflow-y: auto; padding: 14px; display: flex; flex-direction: column; gap: 14px; background-size: cover; background-position: center; background-attachment: fixed; scroll-behavior: smooth; }
+  .msg-row { display: flex; gap: 8px; max-width: 92%; animation: fadeIn 0.25s cubic-bezier(0.25, 0.8, 0.25, 1); }
+  @keyframes fadeIn { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
+  .msg-row.user { align-self: flex-end; flex-direction: row-reverse; }
+  .msg-row.ai { align-self: flex-start; }
+
+  .msg-avatar { width: 32px; height: 32px; border-radius: 50%; object-fit: cover; flex-shrink: 0; border: 1px solid var(--border); background: var(--bg-card); }
+  .msg-body { display: flex; flex-direction: column; gap: 4px; max-width: 100%; }
+
+  .bubble { padding: 12px 15px; border-radius: 18px; font-size: 0.95rem; line-height: 1.5; word-break: break-word; backdrop-filter: blur(8px); white-space: pre-wrap; box-shadow: 0 2px 8px rgba(0,0,0,0.1); }
+  .msg-row.user .bubble { background: var(--user-bubble); color: #fff; border-bottom-right-radius: 4px; }
+  .msg-row.ai .bubble { background: var(--ai-bubble); color: var(--text); border-bottom-left-radius: 4px; border: 1px solid var(--border); }
+
+  .chat-img-preview { max-width: 100%; max-height: 240px; border-radius: 12px; margin-bottom: 8px; object-fit: cover; border: 1px solid var(--border); display: block; }
+  .code-box { background: #050505; color: #10b981; padding: 12px; border-radius: 8px; font-family: monospace; overflow-x: auto; margin: 6px 0; font-size: 0.85rem; border: 1px solid #333; white-space: pre; }
+
+  .msg-footer { display: flex; gap: 12px; margin-top: 2px; flex-wrap: wrap; }
+  .msg-btn { background: none; border: none; color: var(--text-dim); cursor: pointer; display: flex; align-items: center; gap: 4px; font-size: 0.75rem; padding: 4px 6px; border-radius: 6px; transition: 0.2s; font-weight: 500; }
+  .msg-btn:hover, .msg-btn:active { color: #fff; background: rgba(255,255,255,0.1); }
+
+  .chips-bar { display: flex; gap: 8px; overflow-x: auto; padding: 8px 14px; background: var(--bg-surface); border-top: 1px solid var(--border); scrollbar-width: none; flex-shrink: 0; }
+  .chips-bar::-webkit-scrollbar { display: none; }
+  .chip { white-space: nowrap; background: var(--bg-card); border: 1px solid var(--border); color: var(--text-dim); font-size: 0.8rem; padding: 8px 14px; border-radius: 20px; cursor: pointer; transition: 0.2s; font-weight: 500; }
+  .chip:hover, .chip:active { color: #fff; border-color: var(--primary); background: rgba(99,102,241,0.1); }
+
+  footer { background: var(--bg-surface); border-top: 1px solid var(--border); padding: 10px 12px; display: flex; align-items: center; gap: 8px; flex-shrink: 0; }
+  .input-area { flex: 1; display: flex; flex-direction: column; background: var(--bg-card); border: 1px solid var(--border); border-radius: 24px; padding: 4px 12px; transition: 0.3s; }
+  .input-area:focus-within { border-color: var(--primary); box-shadow: 0 0 0 2px rgba(99,102,241,0.2); }
+  .attachment-tag { display: none; align-items: center; gap: 6px; font-size: 0.75rem; color: #fff; background: var(--primary); padding: 4px 10px; border-radius: 12px; margin: 6px 0 2px 0; width: fit-content; font-weight: 600; }
+  .chat-input { width: 100%; background: transparent; border: none; color: #fff; font-size: 0.95rem; outline: none; resize: none; max-height: 100px; padding: 8px 0; }
+
+  .btn-mic.active-mic { background: #ef4444; color: #fff; animation: pulse 1s infinite; }
+  @keyframes pulse { 0%,100% { transform: scale(1); } 50% { transform: scale(1.1); } }
+
+  .send-btn { background: var(--gradient); color: #fff; }
+  .send-btn:disabled { opacity: 0.5; cursor: not-allowed; filter: grayscale(1); }
+
+  .typing-indicator { display: flex; gap: 4px; padding: 6px 0; align-items: center; height: 24px; }
+  .typing-dot { width: 6px; height: 6px; background: var(--text-dim); border-radius: 50%; animation: blink 1.4s infinite both; }
+  .typing-dot:nth-child(2) { animation-delay: 0.2s; } .typing-dot:nth-child(3) { animation-delay: 0.4s; }
+  @keyframes blink { 0%, 80%, 100% { opacity: 0.3; } 40% { opacity: 1; } }
+
+  .modal-bg { position: fixed; inset: 0; background: rgba(0,0,0,0.75); backdrop-filter: blur(5px); display: none; align-items: center; justify-content: center; z-index: 100; padding: 16px; opacity: 0; transition: opacity 0.3s ease; }
+  .modal-bg.show { display: flex; opacity: 1; }
+  .modal-box { background: var(--bg-surface); border: 1px solid var(--border); border-radius: 20px; width: 100%; max-width: 360px; padding: 24px; display: flex; flex-direction: column; gap: 16px; max-height: 90dvh; overflow-y: auto; box-shadow: 0 10px 40px rgba(0,0,0,0.6); transform: translateY(20px); transition: transform 0.3s ease; }
+  .modal-bg.show .modal-box { transform: translateY(0); }
+
+  .modal-box h2 { font-size: 1.15rem; display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px; }
+  .modal-box select, .modal-box input { width: 100%; background: var(--bg-card); border: 1px solid var(--border); color: #fff; padding: 12px; border-radius: 12px; outline: none; font-size: 0.9rem; transition: 0.2s; }
+  .modal-box select:focus, .modal-box input:focus { border-color: var(--primary); }
+  .btn-save { width: 100%; padding: 14px; border-radius: 14px; background: var(--gradient); color: #fff; font-size: 1rem; font-weight: 600; border: none; cursor: pointer; transition: 0.2s; margin-top: 8px; }
+  .btn-save:active { transform: scale(0.97); }
+  .hint-text { font-size: 0.72rem; color: var(--text-dim); line-height: 1.5; margin-top: 4px; }
+  .hint-text a { color: var(--primary); }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="brand" onclick="openSettingsModal()">
+    <div class="logo-wrap"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.2" stroke-linecap="round"><path d="M12 2a8 8 0 0 0-8 8c0 3.3 2 6.2 5 7.4V21l4-2 4 2v-3.6c3-1.2 5-4.1 5-7.4a8 8 0 0 0-8-8z"/><circle cx="9.5" cy="9.5" r="1.2" fill="#fff"/><circle cx="14.5" cy="9.5" r="1.2" fill="#fff"/><path d="M9 13.5c1 .8 2 1 3 1s2-.2 3-1"/></svg></div>
+    <div class="brand-text">
+      <h1>AI Dost <span style="font-size:0.6rem;background:#ef4444;padding:2px 5px;border-radius:6px;color:#fff;vertical-align:middle;margin-left:2px;">MAX</span></h1>
+      <p id="modeBadge">ऑनलाइन • तैयार</p>
+    </div>
+  </div>
+  <div class="header-actions">
+    <button class="icon-btn" onclick="stopAudio()" title="आवाज़ रोकें">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 5L6 9H2v6h4l5 4V5z"/><line x1="23" y1="9" x2="17" y2="15"/><line x1="17" y1="9" x2="23" y2="15"/></svg>
+    </button>
+    <button class="icon-btn" onclick="clearChatLog()" title="चैट साफ़ करें">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>
+    </button>
+    <div class="avatar-wrap" onclick="openAvatarModal()" title="प्रोफाइल">
+      <img id="navAvatar" src="" alt="Profile">
+    </div>
+  </div>
+</header>
+
+<main id="chatBox"></main>
+
+<div class="chips-bar">
+  <div class="chip" onclick="quickSend('मेरी इस फोटो को स्कैन करके विस्तार से बताओ कि इसमें क्या है?')">👁️ इमेज स्कैनर</div>
+  <div class="chip" onclick="quickSend('आज की एक बेहतरीन मोटिवेशनल शायरी सुनाओ')">🔥 मोटिवेशन</div>
+  <div class="chip" onclick="quickSend('मुझे 5 नए अंग्रेज़ी शब्द उनके हिंदी अर्थ के साथ सिखाओ')">📚 इंग्लिश सीखें</div>
+  <div class="chip" onclick="quickSend('Python में एक Calculator का कोड लिख कर दो')">💻 कोडिंग</div>
+</div>
+
+<footer>
+  <label class="icon-btn" title="फोटो या फाइल भेजें" style="cursor:pointer;">
+    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21.44 11.05l-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48"/></svg>
+    <input type="file" id="fileInput" accept="image/*,text/plain" style="display:none;">
+  </label>
+  <button id="micBtn" class="icon-btn btn-mic" title="बोलकर लिखें">
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><line x1="12" y1="19" x2="12" y2="23"/><line x1="8" y1="23" x2="16" y2="23"/></svg>
+  </button>
+  <div class="input-area">
+    <div id="attachmentTag" class="attachment-tag">
+      <span id="attachmentName">📷 फाइल अटैच है</span>
+      <span style="cursor:pointer;margin-left:8px;font-size:1.1rem;line-height:1;" onclick="removeAttachment()">&times;</span>
+    </div>
+    <textarea id="textInput" class="chat-input" rows="1" placeholder="संदेश लिखें..."></textarea>
+  </div>
+  <button id="sendBtn" class="icon-btn send-btn" title="भेजें">
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
+  </button>
+</footer>
+
+<div class="modal-bg" id="avatarModal">
+  <div class="modal-box">
+    <h2><span>डिस्प्ले सेटिंग्स</span><span class="close-btn" onclick="closeModal('avatarModal')" style="cursor:pointer;color:var(--text-dim);font-size:1.5rem;">&times;</span></h2>
+    <div style="text-align:center;">
+      <img id="avatarPreview" src="" style="width:100px;height:100px;border-radius:50%;border:3px solid var(--primary);object-fit:cover;margin:0 auto 16px;display:block;">
+      <label class="chip" style="cursor:pointer;display:inline-block;padding:10px 20px;margin-bottom:12px;">
+        👤 अपनी फोटो चुनें
+        <input type="file" id="profilePicInput" accept="image/*" style="display:none;">
+      </label>
+      <br>
+      <label class="chip" style="cursor:pointer;display:inline-block;padding:10px 20px;">
+        🖼️ चैट वॉलपेपर लगाएँ
+        <input type="file" id="wallpaperInput" accept="image/*" style="display:none;">
+      </label>
+      <div style="margin-top:16px;">
+        <span class="msg-btn" style="justify-content:center;color:#ef4444;font-size:0.85rem;" onclick="clearWallpaper()">❌ वॉलपेपर हटाएँ</span>
+      </div>
+    </div>
+    <button class="btn-save" onclick="saveProfileData()">सेव करें</button>
+  </div>
+</div>
+
+<div class="modal-bg" id="settingsModal">
+  <div class="modal-box">
+    <h2><span>AI सिस्टम सेटिंग्स</span><span class="close-btn" onclick="closeModal('settingsModal')" style="cursor:pointer;color:var(--text-dim);font-size:1.5rem;">&times;</span></h2>
+    <div>
+      <label style="font-size:0.85rem;color:var(--text-dim);font-weight:500;">AI पर्सनैलिटी (मूड):</label>
+      <select id="aiModeSelect" style="margin-top:8px;">
+        <option value="friend">🤗 सच्चा दोस्त (Friendly & Fun)</option>
+        <option value="study">📖 पढ़ाई साथी (Tutor & GK)</option>
+        <option value="shayari">🎭 शायर (Poetry & Jokes)</option>
+        <option value="english">🇬🇧 इंग्लिश गुरु (Translator)</option>
+        <option value="coder">💻 कोडर (Software Engineer)</option>
+      </select>
+    </div>
+    <div>
+      <label style="font-size:0.85rem;color:var(--text-dim);font-weight:500;">कलर थीम:</label>
+      <select id="themeSelect" style="margin-top:8px;">
+        <option value="dark">नियॉन डार्क (Default)</option>
+        <option value="ocean">डीप ओशन (Blue)</option>
+      </select>
+    </div>
+    <div>
+      <label style="font-size:0.85rem;color:var(--text-dim);font-weight:500;">आवाज़ की स्पीड:</label>
+      <input type="range" id="voiceRate" min="0.5" max="1.5" step="0.1" value="1.0" style="width:100%;margin-top:8px;accent-color:var(--primary);">
+    </div>
+    <div>
+      <label style="font-size:0.85rem;color:var(--text-dim);font-weight:500;">Groq API Key (फ्री, असली AI के लिए):</label>
+      <input type="password" id="apiKeyInput" placeholder="gsk_... यहाँ पेस्ट करें">
+      <div class="hint-text">फ्री key यहाँ से बनाएं: <a href="https://console.groq.com/keys" target="_blank">console.groq.com/keys</a></div>
+    </div>
+    <button class="btn-save" onclick="saveSettings()">सेटिंग्स लागू करें</button>
+  </div>
+</div>
+
+<script>
+  const DEFAULT_AVATAR = "data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='%236366f1'><path d='M12 12c2.7 0 4.8-2.1 4.8-4.8S14.7 2.4 12 2.4 7.2 4.5 7.2 7.2 9.3 12 12 12zm0 2.4c-3.2 0-9.6 1.6-9.6 4.8V21h19.2v-1.8c0-3.2-6.4-4.8-9.6-4.8z'/></svg>";
+  const BOT_AVATAR = "data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%236366f1' stroke-width='2'><path d='M12 2a8 8 0 0 0-8 8c0 3.3 2 6.2 5 7.4V21l4-2 4 2v-3.6c3-1.2 5-4.1 5-7.4a8 8 0 0 0-8-8z'/></svg>";
+
+  let userAvatar = localStorage.getItem('aidost_avatar') || DEFAULT_AVATAR;
+  let chatWallpaper = localStorage.getItem('aidost_wallpaper') || '';
+  let chatHistory = [];
+  try { chatHistory = JSON.parse(localStorage.getItem('aidost_chat_history') || '[]'); } catch(e) { chatHistory = []; }
+
+  let aiMode = localStorage.getItem('aidost_mode') || 'friend';
+  let appTheme = localStorage.getItem('aidost_theme') || 'dark';
+  let customApiKey = localStorage.getItem('aidost_api_key') || localStorage.getItem('ai_dost_groq_key') || '';
+  let vRate = parseFloat(localStorage.getItem('aidost_voice_rate') || '1.0');
+
+  let pendingImage = null;
+  let pendingTextFile = null;
+  let isAiTyping = false;
+
+  const chatBox = document.getElementById('chatBox');
+  const textInput = document.getElementById('textInput');
+  const sendBtn = document.getElementById('sendBtn');
+  const navAvatar = document.getElementById('navAvatar');
+  const avatarPreview = document.getElementById('avatarPreview');
+  const micBtn = document.getElementById('micBtn');
+
+  navAvatar.src = userAvatar;
+  avatarPreview.src = userAvatar;
+  if(chatWallpaper) chatBox.style.backgroundImage = `linear-gradient(rgba(11,15,25,0.8), rgba(11,15,25,0.8)), url(${chatWallpaper})`;
+  applyTheme(appTheme);
+  updateModeBadge();
+  loadHistory();
+
+  function closeModal(id) {
+    const m = document.getElementById(id);
+    m.classList.remove('show');
+    setTimeout(() => m.style.display = 'none', 300);
+  }
+  function openModal(id) {
+    const m = document.getElementById(id);
+    m.style.display = 'flex';
+    setTimeout(() => m.classList.add('show'), 10);
+  }
+
+  function openAvatarModal() { avatarPreview.src = userAvatar; openModal('avatarModal'); }
+  function openSettingsModal() {
+    document.getElementById('aiModeSelect').value = aiMode;
+    document.getElementById('themeSelect').value = appTheme;
+    document.getElementById('apiKeyInput').value = customApiKey;
+    document.getElementById('voiceRate').value = vRate;
+    openModal('settingsModal');
+  }
+
+  function applyTheme(theme) {
+    appTheme = theme;
+    document.body.className = theme === 'ocean' ? 'theme-ocean' : '';
+  }
+
+  function updateModeBadge() {
+    const titles = { friend: 'दोस्त', study: 'स्टडी', shayari: 'शायर', english: 'इंग्लिश', coder: 'कोडर' };
+    document.getElementById('modeBadge').innerText = `${titles[aiMode] || 'ऑनलाइन'} मोड`;
+  }
+
+  function saveSettings() {
+    aiMode = document.getElementById('aiModeSelect').value;
+    appTheme = document.getElementById('themeSelect').value;
+    customApiKey = document.getElementById('apiKeyInput').value.trim();
+    vRate = parseFloat(document.getElementById('voiceRate').value);
+
+    localStorage.setItem('aidost_mode', aiMode);
+    localStorage.setItem('aidost_theme', appTheme);
+    localStorage.setItem('aidost_api_key', customApiKey);
+    localStorage.setItem('aidost_voice_rate', vRate);
+
+    workingModel = null; workingVisionModel = null;
+
+    applyTheme(appTheme); updateModeBadge(); closeModal('settingsModal');
+    addAIMessage("सेटिंग्स सेव हो गईं!", {silent:true});
+  }
+
+  function compressImage(file, maxDim, callback) {
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      const img = new Image();
+      img.onload = () => {
+        const canvas = document.createElement('canvas');
+        let w = img.width, h = img.height;
+        if (w > h && w > maxDim) { h = Math.round(h * maxDim / w); w = maxDim; }
+        else if (h > maxDim) { w = Math.round(w * maxDim / h); h = maxDim; }
+        canvas.width = w; canvas.height = h;
+        canvas.getContext('2d').drawImage(img, 0, 0, w, h);
+        callback(canvas.toDataURL('image/jpeg', 0.75));
+      };
+      img.src = e.target.result;
+    };
+    reader.readAsDataURL(file);
+  }
+
+  document.getElementById('profilePicInput').onchange = (e) => {
+    if(e.target.files[0]) compressImage(e.target.files[0], 150, b64 => { avatarPreview.src = b64; e.target.value = ''; });
+  };
+  document.getElementById('wallpaperInput').onchange = (e) => {
+    if(e.target.files[0]) compressImage(e.target.files[0], 800, b64 => {
+      chatWallpaper = b64;
+      chatBox.style.backgroundImage = `linear-gradient(rgba(11,15,25,0.8), rgba(11,15,25,0.8)), url(${chatWallpaper})`;
+      alert("वॉलपेपर लग गया! सेव पर क्लिक करें।"); e.target.value = '';
+    });
+  };
+  function clearWallpaper() {
+    chatWallpaper = ''; chatBox.style.backgroundImage = 'none';
+    try{ localStorage.removeItem('aidost_wallpaper'); }catch(e){}
+    alert("वॉलपेपर हटा दिया गया।");
+  }
+
+  function saveProfileData() {
+    userAvatar = avatarPreview.src;
+    try {
+      localStorage.setItem('aidost_avatar', userAvatar);
+      if(chatWallpaper) localStorage.setItem('aidost_wallpaper', chatWallpaper);
+    } catch(err) { console.warn("Storage Limit Reached for Images"); }
+    navAvatar.src = userAvatar;
+    document.querySelectorAll('.user-avatar-sync').forEach(img => img.src = userAvatar);
+    closeModal('avatarModal');
+  }
+
+  document.getElementById('fileInput').onchange = (e) => {
+    const file = e.target.files[0];
+    if(!file) return;
+    if(file.type.startsWith('image/')){
+      compressImage(file, 1024, b64 => {
+        pendingImage = b64;
+        pendingTextFile = null;
+        document.getElementById('attachmentName').innerText = '📷 ' + file.name;
+        document.getElementById('attachmentTag').style.display = 'flex';
+      });
+    } else {
+      const reader = new FileReader();
+      reader.onload = (ev) => {
+        pendingTextFile = { name: file.name, content: ev.target.result };
+        pendingImage = null;
+        document.getElementById('attachmentName').innerText = '📄 ' + file.name;
+        document.getElementById('attachmentTag').style.display = 'flex';
+      };
+      reader.readAsText(file);
+    }
+    e.target.value = '';
+  };
+
+  function removeAttachment(){
+    pendingImage = null; pendingTextFile = null;
+    document.getElementById('attachmentTag').style.display = 'none';
+  }
+
+  function quickSend(text){ textInput.value = text; sendMessage(); }
+
+  textInput.addEventListener('input', () => {
+    textInput.style.height = 'auto';
+    textInput.style.height = Math.min(textInput.scrollHeight, 100) + 'px';
+  });
+  textInput.addEventListener('keydown', (e) => {
+    if(e.key === 'Enter' && !e.shiftKey){ e.preventDefault(); sendMessage(); }
+  });
+  sendBtn.addEventListener('click', sendMessage);
+
+  function escapeHtml(str){
+    return String(str).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+  }
+
+  function renderBubbleContent(text){
+    const parts = String(text).split(/```(\w*)\n?([\s\S]*?)```/g);
+    if(parts.length === 1) return escapeHtml(text);
+    let html = '';
+    for(let i=0;i<parts.length;i++){
+      if(i % 3 === 0 && parts[i]) html += `<span>${escapeHtml(parts[i])}</span>`;
+      else if(i % 3 === 2) html += `<div class="code-box">${escapeHtml(parts[i])}</div>`;
+    }
+    return html;
+  }
+
+  function addUserMessage(text, imageB64){
+    const row = document.createElement('div');
+    row.className = 'msg-row user';
+    const img = document.createElement('img');
+    img.className = 'msg-avatar user-avatar-sync';
+    img.src = userAvatar;
+    const body = document.createElement('div');
+    body.className = 'msg-body';
+    const bubble = document.createElement('div');
+    bubble.className = 'bubble';
+    if(imageB64){
+      const preview = document.createElement('img');
+      preview.className = 'chat-img-preview';
+      preview.src = imageB64;
+      bubble.appendChild(preview);
+    }
+    if(text){
+      const textSpan = document.createElement('div');
+      textSpan.innerText = text;
+      bubble.appendChild(textSpan);
+    }
+    body.appendChild(bubble);
+    row.appendChild(img);
+    row.appendChild(body);
+    chatBox.appendChild(row);
+    chatBox.scrollTop = chatBox.scrollHeight;
+  }
+
+  function addAIMessage(text, opts){
+    opts = opts || {};
+    const row = document.createElement('div');
+    row.className = 'msg-row ai';
+    const img = document.createElement('img');
+    img.className = 'msg-avatar';
+    img.src = BOT_AVATAR;
+    const body = document.createElement('div');
+    body.className = 'msg-body';
+    const bubble = document.createElement('div');
+    bubble.className = 'bubble';
+    bubble.innerHTML = renderBubbleContent(text);
+    body.appendChild(bubble);
+
+    if(!opts.silent){
+      const footer = document.createElement('div');
+      footer.className = 'msg-footer';
+      const copyBtn = document.createElement('button');
+      copyBtn.className = 'msg-btn';
+      copyBtn.innerText = '📋 कॉपी';
+      copyBtn.onclick = () => {
+        navigator.clipboard?.writeText(text).then(()=>{
+          copyBtn.innerText = '✓ हो गया';
+          setTimeout(()=>copyBtn.innerText='📋 कॉपी', 1500);
+        }).catch(()=>{});
+      };
+      const readBtn = document.createElement('button');
+      readBtn.className = 'msg-btn';
+      readBtn.innerText = '🔊 सुनें';
+      readBtn.onclick = () => speakText(text);
+      footer.appendChild(copyBtn);
+      footer.appendChild(readBtn);
+      body.appendChild(footer);
+    }
+
+    row.appendChild(img);
+    row.appendChild(body);
+    chatBox.appendChild(row);
+    chatBox.scrollTop = chatBox.scrollHeight;
+  }
+
+  function showTyping(){
+    const row = document.createElement('div');
+    row.className = 'msg-row ai';
+    row.id = 'typingRow';
+    row.innerHTML = `<img class="msg-avatar" src="${BOT_AVATAR}"><div class="msg-body"><div class="bubble"><div class="typing-indicator"><span class="typing-dot"></span><span class="typing-dot"></span><span class="typing-dot"></span></div></div></div>`;
+    chatBox.appendChild(row);
+    chatBox.scrollTop = chatBox.scrollHeight;
+  }
+  function hideTyping(){
+    const row = document.getElementById('typingRow');
+    if(row) row.remove();
+  }
+
+  function saveHistory(){
+    try{ localStorage.setItem('aidost_chat_history', JSON.stringify(chatHistory.slice(-40))); }catch(e){}
+  }
+  function loadHistory(){
+    chatHistory.forEach(m => {
+      if(m.role === 'user') addUserMessage(m.text, m.image);
+      else addAIMessage(m.text, {silent:false});
+    });
+  }
+  function clearChatLog(){
+    if(!confirm('पूरी बातचीत मिटा दें?')) return;
+    chatHistory = [];
+    saveHistory();
+    chatBox.innerHTML = '';
+  }
+
+  const SpeechRecognitionAPI = window.SpeechRecognition || window.webkitSpeechRecognition;
+  let recognizer = null, isRecording = false;
+  if(SpeechRecognitionAPI){
+    recognizer = new SpeechRecognitionAPI();
+    recognizer.lang = 'hi-IN';
+    recognizer.continuous = false;
+    recognizer.onresult = (e) => {
+      textInput.value = (textInput.value ? textInput.value + ' ' : '') + e.results[0][0].transcript;
+    };
+    recognizer.onend = () => { isRecording = false; micBtn.classList.remove('active-mic'); };
+    recognizer.onerror = () => { isRecording = false; micBtn.classList.remove('active-mic'); };
+  } else { micBtn.style.display = 'none'; }
+  micBtn.addEventListener('click', () => {
+    if(!recognizer) return;
+    if(isRecording){ recognizer.stop(); }
+    else { try{ recognizer.start(); isRecording = true; micBtn.classList.add('active-mic'); }catch(e){} }
+  });
+
+  function speakText(text){
+    stopAudio();
+    if(!window.speechSynthesis) return;
+    const clean = String(text).replace(/```[\s\S]*?```/g, ' कोड ब्लॉक ');
+    const utter = new SpeechSynthesisUtterance(clean);
+    utter.lang = 'hi-IN';
+    utter.rate = vRate;
+    speechSynthesis.speak(utter);
+  }
+  function stopAudio(){ if(window.speechSynthesis) speechSynthesis.cancel(); }
+
+  const CREATOR_NAME = "King Pawan";
+  const modePrompts = {
+    friend: "तुम एक गर्मजोशी भरे, सच्चे दोस्त की तरह बात करते हो। Hinglish में casual टोन में जवाब दो।",
+    study: "तुम एक धैर्यवान पढ़ाई साथी/ट्यूटर हो। आसान भाषा में, उदाहरण देकर समझाओ।",
+    shayari: "तुम एक शायर हो। हर जवाब में हल्की शायरी या जोक्स का पुट डालो, फिर भी सवाल का सही जवाब भी दो।",
+    english: "तुम एक इंग्लिश गुरु/ट्रांसलेटर हो। अंग्रेज़ी सिखाने और अनुवाद करने में मदद करो, उदाहरण के साथ।",
+    coder: "तुम एक अनुभवी सॉफ्टवेयर इंजीनियर हो। कोड साफ़-सुथरा, समझाकर दो, कोड हमेशा ``` के अंदर रखो।"
+  };
+  function systemPromptFor(mode){
+    const base = modePrompts[mode] || modePrompts.friend;
+    return base + ` अगर कोई पूछे कि तुम्हें किसने बनाया / develop किया, तो जवाब दो कि "${CREATOR_NAME}" ने तुम्हें बनाया है।`;
+  }
+
+  let workingModel = null;
+  let workingVisionModel = null;
+
+  function getApiKey(){ return customApiKey || localStorage.getItem('ai_dost_groq_key') || ''; }
+
+  async function pickAvailableModel(vision){
+    const key = getApiKey();
+    if(!key) throw new Error('पहले ⚙️ सेटिंग्स में जाकर अपनी Groq API key डालें।');
+    const res = await fetch('https://api.groq.com/openai/v1/models', { headers: { 'Authorization': `Bearer ${key}` }});
+    if(!res.ok){
+      if(res.status === 401) throw new Error('API key सही नहीं है। सेटिंग्स में जाकर चेक करें।');
+      throw new Error('मॉडल लिस्ट नहीं मिल पाई (HTTP ' + res.status + ')');
+    }
+    const data = await res.json();
+    const ids = (data.data || []).map(m => m.id).filter(Boolean);
+    const excludePattern = /whisper|tts|guard|moderation/i;
+    let pool = ids.filter(id => !excludePattern.test(id));
+    if(vision){
+      const visionPool = pool.filter(id => /vision|llava/i.test(id));
+      return visionPool[0] || null;
+    }
+    return pool.find(id => /instant/i.test(id)) || pool.find(id => /versatile/i.test(id)) || pool[0] || null;
+  }
+
+  async function callGroqChat(messages, needVision){
+    const key = getApiKey();
+    if(!key) throw new Error('पहले ⚙️ सेटिंग्स में जाकर अपनी फ्री Groq API key डालें।');
+
+    let model = needVision ? workingVisionModel : workingModel;
+    if(!model){
+      model = await pickAvailableModel(needVision);
+      if(needVision) workingVisionModel = model; else workingModel = model;
+    }
+    if(needVision && !model) throw new Error('अभी फ़ोटो समझने वाला कोई मॉडल उपलब्ध नहीं मिला।');
+
+    async function tryModel(m){
+      const res = await fetch('https://api.groq.com/openai/v1/chat/completions', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${key}` },
+        body: JSON.stringify({ model: m, messages })
+      });
+      if(res.ok){
+        const data = await res.json();
+        const content = data?.choices?.[0]?.message?.content;
+        if(!content) throw { retry:false, error: new Error('खाली जवाब मिला, दोबारा कोशिश करें।') };
+        return content;
+      }
+      const err = await res.json().catch(() => ({}));
+      const msg = err?.error?.message || ('HTTP ' + res.status);
+      if(res.status === 401) throw { retry:false, error: new Error('API key सही नहीं है।') };
+      if(res.status === 404 || /decommission|not found|does not exist/i.test(msg)) throw { retry:true, error: new Error(msg) };
+      throw { retry:false, error: new Error(msg) };
+    }
+
+    try{
+      return await tryModel(model);
+    }catch(fail){
+      if(fail?.retry){
+        const fresh = await pickAvailableModel(needVision);
+        if(needVision) workingVisionModel = fresh; else workingModel = fresh;
+        if(!fresh) throw new Error('कोई मॉडल उपलब्ध नहीं मिला।');
+        return await tryModel(fresh);
+      }
+      throw fail.error || fail;
+    }
+  }
+
+  async function sendMessage(){
+    const text = textInput.value.trim();
+    if(!text && !pendingImage && !pendingTextFile) return;
+    if(isAiTyping) return;
+
+    let fullUserText = text;
+    if(pendingTextFile) fullUserText += (fullUserText ? '\n\n' : '') + `[फ़ाइल: ${pendingTextFile.name}]\n${pendingTextFile.content}`;
+
+    addUserMessage(text, pendingImage);
+    chatHistory.push({ role:'user', text: text || (pendingImage ? '(फोटो भेजी)' : ''), image: pendingImage || null });
+    saveHistory();
+
+    const imgToSend = pendingImage;
+    textInput.value = ''; textInput.style.height = 'auto';
+    removeAttachment();
+    sendBtn.disabled = true;
+    isAiTyping = true;
+    showTyping();
+
+    try{
+      const messages = [{ role: 'system', content: systemPromptFor(aiMode) }];
+      const recent = chatHistory.slice(-9, -1);
+      recent.forEach(m => {
+        if(m.role === 'user' && !m.image) messages.push({ role: 'user', content: m.text });
+        else if(m.role === 'model') messages.push({ role: 'assistant', content: m.text });
+      });
+
+      let reply;
+      if(imgToSend){
+        messages.push({
+          role: 'user',
+          content: [
+            { type: 'text', text: fullUserText || 'इस फोटो में क्या है, विस्तार से बताओ।' },
+            { type: 'image_url', image_url: { url: imgToSend } }
+          ]
+        });
+        reply = await callGroqChat(messages, true);
+      } else {
+        messages.push({ role: 'user', content: fullUserText });
+        reply = await callGroqChat(messages, false);
+      }
+
+      hideTyping();
+      addAIMessage(reply);
+      chatHistory.push({ role: 'model', text: reply });
+      saveHistory();
+      if(!imgToSend) speakText(reply);
+    }catch(err){
+      hideTyping();
+      addAIMessage('⚠️ माफ़ करें, गड़बड़ हो गई: ' + err.message, { silent: true });
+    }finally{
+      sendBtn.disabled = false;
+      isAiTyping = false;
+    }
+  }
+</script>
+</body>
+</html>
